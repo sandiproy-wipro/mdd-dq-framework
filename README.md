@@ -11,12 +11,12 @@ No local Python packages. No `src/` imports. No pytest. Just `%run` and go.
 dq-framework-notebooks/
 │
 ├── notebooks/
-│   ├── 00_dq_controller.py        ← ★ RUN THIS — orchestrates everything
-│   ├── 01_dq_config_validator.py  ← config loading + validation logic
-│   ├── 02_dq_rule_engine.py       ← all 16 rule type implementations
-│   ├── 03_dq_dataset_loader.py    ← Delta / Parquet / CSV / JDBC loader
-│   ├── 04_dq_results_writer.py    ← Delta persistence + run summary
-│   └── 05_dq_tests.py             ← self-contained test suite (Run All to test)
+│   ├── dq_controller.py        ← ★ RUN THIS — orchestrates everything
+│   ├── dq_config_validator.py  ← config loading + validation logic
+│   ├── dq_rule_engine.py       ← all 16 rule type implementations
+│   ├── dq_dataset_loader.py    ← Delta / Parquet / CSV / JDBC loader
+│   ├── dq_results_writer.py    ← Delta persistence + run summary
+│   └── dq_tests.py             ← self-contained test suite (Run All to test)
 │
 └── config/
     ├── master_config.yml           ← central dataset registry
@@ -76,11 +76,11 @@ The controller will:
 ## How `%run` links the notebooks
 
 ```
-00_dq_controller
-    %run 01_dq_config_validator   → defines load_all_configs(), DQConfigError, ...
-    %run 02_dq_rule_engine        → defines RuleEngine, DQRuleResult
-    %run 03_dq_dataset_loader     → defines load_dataset(), DatasetLoaderError
-    %run 04_dq_results_writer     → defines ResultsWriter
+dq_controller
+    %run dq_config_validator   → defines load_all_configs(), DQConfigError, ...
+    %run dq_rule_engine        → defines RuleEngine, DQRuleResult
+    %run dq_dataset_loader     → defines load_dataset(), DatasetLoaderError
+    %run dq_results_writer     → defines ResultsWriter
 ```
 
 All symbols become available in the controller's scope after each `%run`.
@@ -162,13 +162,13 @@ datasets:
     enabled: true
 ```
 
-3. Run `00_dq_controller` — no notebook changes needed.
+3. Run `dq_controller` — no notebook changes needed.
 
 ---
 
 ## Running the test suite
 
-Open `notebooks/05_dq_tests.py` and click **Run All**.
+Open `notebooks/dq_tests.py` and click **Run All**.
 
 The test notebook:
 - `%run`s notebooks 01–03 to load all logic
