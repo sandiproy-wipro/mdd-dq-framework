@@ -1,0 +1,68 @@
+# =============================================================================
+# Dataset config: customers
+# =============================================================================
+
+dataset:
+  name: customers
+  description: "Customer master data"
+  source:
+    type: delta
+    path: samplecatalog.sampleschema.customers
+  tags:
+    domain: sales
+    owner: data-engineering@company.com
+    criticality: high
+
+rules:
+
+  - id: customers_pk_not_null
+    description: "customer_id must never be null"
+    type: not_null
+    column: customer_id
+    severity: CRITICAL
+
+  - id: customers_pk_unique
+    description: "customer_id must be unique"
+    type: unique
+    columns: [customer_id]
+    severity: CRITICAL
+
+  - id: customers_email_not_null
+    description: "email must never be null"
+    type: not_null
+    column: email
+    severity: CRITICAL
+
+  - id: customers_email_format
+    description: "email must match a valid email pattern"
+    type: regex
+    column: email
+    pattern: "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
+    severity: WARNING
+
+  - id: customers_row_count
+    description: "Customers table must have at least 100 rows"
+    type: row_count
+    min: 100
+    severity: CRITICAL
+
+  - id: customers_country_accepted
+    description: "country_code must be a valid ISO 2-letter code"
+    type: accepted_values
+    column: country_code
+    values: [US, GB, DE, FR, IN, AU, CA, SG, JP, BR, MX, NL, ES, IT, SE, NO, DK, FI, CH, NZ]
+    severity: WARNING
+
+  - id: customers_created_at_freshness
+    description: "Customer records must have been loaded within 48 hours"
+    type: freshness
+    column: created_at
+    max_hours: 48
+    severity: WARNING
+
+  - id: customers_phone_completeness
+    description: "phone null rate must be below 30%"
+    type: completeness
+    column: phone
+    max_null_rate: 0.30
+    severity: INFO

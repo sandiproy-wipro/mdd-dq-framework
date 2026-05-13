@@ -1,0 +1,169 @@
+# =============================================================================
+# Dataset config: orders
+# =============================================================================
+# The 'dataset.name' MUST match the 'name' entry in master_config.yml exactly.
+# =============================================================================
+
+dataset:
+  name: orders                                     # ← must match master_config
+  description: "E-commerce order transactions"
+  source:
+    type: delta                                    # delta | parquet | csv | jdbc | view
+    path: samplecatalog.sampleschema.orders                        # catalog.schema.table or file path
+  tags:
+    domain: sales
+    owner: data-engineering@company.com
+    criticality: high
+
+# -----------------------------------------------------------------------------
+# DQ Rules
+# Each rule requires:
+#   id          : unique within this file (used in results table)
+#   description : human-readable explanation
+#   type        : rule type (see supported types below)
+#   severity    : CRITICAL | WARNING | INFO
+#   On CRITICAL failure the run aborts (if global abort_on_critical=true)
+#
+# Supported rule types:
+#   not_null          - column must have no nulls
+#   unique            - column (or column combination) must be unique
+#   row_count         - total rows must be within [min, max]
+#   accepted_values   - column values must be in a list
+#   regex             - column values must match a regex pattern
+#   range             - numeric column must be within [min, max]
+#   date_range        - date column must be within [min, max]
+#   referential       - column values must exist in another table.column
+#   freshness         - data must have been updated within N hours
+#   custom_sql        - arbitrary SQL expression returning (pass BOOLEAN, row_count LONG)
+#   completeness      - null rate must be below threshold (0.0–1.0)
+#   duplicate_count   - duplicate row count must be below threshold
+# -----------------------------------------------------------------------------
+
+rules:
+
+  - id: orders_pk_not_null
+    description: "Primary key order_id must never be null"
+    type: not_null
+    column: order_id
+    severity: CRITICAL
+
+  - id: orders_pk_unique
+    description: "order_id must be unique across all orders"
+    type: unique
+    columns: [order_id]
+    severity: CRITICAL
+
+  - id: orders_row_count_min
+    description: "Orders table must have at least 1000 rows"
+    type: row_count
+    min: 1000
+    severity: CRITICAL
+
+  - id: orders_row_count_max
+    description: "Orders table must not exceed 100M rows (sanity cap)"
+    type: row_count
+    max: 100000000
+    severity: WARNING
+
+  - id: orders_status_accepted
+    description: "order_status must be one of the allowed values"
+    type: accepted_values
+    column: order_status
+    values: [PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED, REFUNDED]
+    severity: CRITICAL
+
+  - id: orders_amount_range
+    description: "order_amount must be between 0 and 1,000,000"
+    type: range
+    column: order_amount
+    min: 0
+    max: 1000000
+    severity: WARNING
+
+  - id: orders_created_at_not_null
+    description: "created_at timestamp must never be null"
+    type: not_null
+    column: created_at
+    severity: CRITICAL
+
+  - id: orders_freshness
+    description: "Orders table must have been updated in the last 26 hours"
+    type: freshness
+    column: created_at
+    max_hours: 26
+    severity: WARNING
+
+  - id: orders_customer_fk
+    description: "customer_id must exist in the customers table"
+    type: referential
+    column: customer_id
+    ref_table: main.sales.customers
+    ref_column: customer_id
+    severity: WARNING
+
+  - id: orders_amount_completeness
+    description: "order_amount null rate must be below 1%"
+    type: completeness
+    column: order_amount
+    max_null_rate: 0.01
+    severity: WARNING
+
+  - id: orders_no_future_dates
+    description: "created_at must not be in the future"
+    type: custom_sql
+    sql: |
+      SELECT
+        COUNT(*) = 0        AS pass,
+        COUNT(*)            AS row_count
+      FROM {table}
+      WHERE created_at > CURRENT_TIMESTAMP()
+    severity: WARNING
+
+  - id: orders_duplicates
+    description: "Duplicate order_id + created_at combinations must be < 10"
+    type: duplicate_count
+    columns: [order_id, created_at]
+    max_duplicates: 10
+    severity: CRITICAL
+
+  # ── NEW RULE TYPES ──────────────────────────────────────────────────────────
+
+  - id: orders_discount_required_when_promo
+    description: "discount_amount must not be null when order_type = PROMO"
+    type: conditional_not_null
+    column: discount_amount
+    condition_column: order_type
+    condition_value: PROMO
+    condition_operator: eq
+    severity: WARNING
+
+  - id: orders_discount_required_when_bulk
+    description: "discount_amount must not be null when quantity >= 100 (bulk orders)"
+    type: conditional_not_null
+    column: discount_amount
+    condition_column: quantity
+    condition_value: 100
+    condition_operator: gte
+    severity: INFO
+
+  - id: orders_payment_method_exclusive
+    description: "Exactly one payment method column must be populated per order"
+    type: mutual_exclusivity
+    columns: [credit_card_id, bank_account_id, wallet_id, voucher_id]
+    allow_all_null: false
+    severity: CRITICAL
+
+  - id: orders_ref_ascii_only
+    description: "order_reference must contain only printable ASCII characters"
+    type: character_set
+    column: order_reference
+    charset_name: ascii_printable
+    severity: WARNING
+
+  - id: orders_ref_length
+    description: "order_reference must be between 8 and 32 characters"
+    type: length_check
+    column: order_reference
+    min_length: 8
+    max_length: 32
+    severity: WARNING

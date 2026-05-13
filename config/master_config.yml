@@ -1,0 +1,46 @@
+# =============================================================================
+# master_config.yml
+# =============================================================================
+# Central registry of all datasets enrolled in the DQ framework.
+# Each entry MUST have:
+#   - name        : unique dataset identifier (must match 'dataset.name' in the
+#                   individual config file)
+#   - config_file : path relative to this repo root to the dataset config YAML
+#   - enabled     : set to false to skip a dataset without removing it
+#
+# VALIDATION RULES (enforced by the controller notebook before any checks run):
+#   1. No duplicate 'name' values are allowed.
+#   2. Every listed config_file must exist on disk (DBFS/Volumes/Workspace).
+#   3. The 'name' in this file must match the 'dataset.name' inside the config.
+#   4. Any entry with enabled: false is skipped without error.
+# =============================================================================
+
+datasets:
+
+  - name: orders
+    config_file: config/datasets/orders.yml
+    enabled: true
+
+  - name: customers
+    config_file: config/datasets/customers.yml
+    enabled: true
+
+  - name: products
+    config_file: config/datasets/products.yml
+    enabled: true
+
+  - name: transactions
+    config_file: config/datasets/transactions.yml
+    enabled: false          # disabled — skipped silently
+
+# -----------------------------------------------------------------------------
+# Global DQ settings (can be overridden per dataset)
+# -----------------------------------------------------------------------------
+global_settings:
+
+  results_table: main.dq_framework.dq_results          # Delta table for results
+  alerts_table:  main.dq_framework.dq_alerts            # Delta table for alerts
+  abort_on_critical: true       # Abort the run if any CRITICAL rule fails
+  max_workers: 4                # Parallel dataset validation threads
+  default_sample_size: 1000     # Rows sampled for content-type checks
+  log_level: INFO               # DEBUG | INFO | WARNING | ERROR

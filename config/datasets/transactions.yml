@@ -1,0 +1,43 @@
+# =============================================================================
+# Dataset config: transactions
+# =============================================================================
+# NOTE: disabled in master_config.yml — included here for completeness
+
+dataset:
+  name: transactions
+  description: "Payment transactions"
+  source:
+    type: delta
+    path: samplecatalog.sampleschema.transactions
+  tags:
+    domain: payments
+    owner: payments-team@company.com
+    criticality: critical
+
+rules:
+
+  - id: txn_pk_not_null
+    description: "transaction_id must never be null"
+    type: not_null
+    column: transaction_id
+    severity: CRITICAL
+
+  - id: txn_pk_unique
+    description: "transaction_id must be unique"
+    type: unique
+    columns: [transaction_id]
+    severity: CRITICAL
+
+  - id: txn_amount_positive
+    description: "amount must be > 0"
+    type: range
+    column: amount
+    min: 0.01
+    severity: CRITICAL
+
+  - id: txn_status_accepted
+    description: "status must be in allowed values"
+    type: accepted_values
+    column: status
+    values: [PENDING, SUCCESS, FAILED, REFUNDED, CHARGEBACK]
+    severity: CRITICAL

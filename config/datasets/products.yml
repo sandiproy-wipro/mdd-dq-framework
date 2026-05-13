@@ -1,0 +1,63 @@
+# =============================================================================
+# Dataset config: products
+# =============================================================================
+
+dataset:
+  name: products
+  description: "Product catalogue"
+  source:
+    type: delta
+    path: samplecatalog.sampleschema.products
+  tags:
+    domain: catalogue
+    owner: catalogue-team@company.com
+    criticality: medium
+
+rules:
+
+  - id: products_pk_not_null
+    description: "product_id must never be null"
+    type: not_null
+    column: product_id
+    severity: CRITICAL
+
+  - id: products_pk_unique
+    description: "product_id must be unique"
+    type: unique
+    columns: [product_id]
+    severity: CRITICAL
+
+  - id: products_price_range
+    description: "price must be between 0.01 and 100,000"
+    type: range
+    column: price
+    min: 0.01
+    max: 100000
+    severity: WARNING
+
+  - id: products_category_not_null
+    description: "category must never be null"
+    type: not_null
+    column: category
+    severity: WARNING
+
+  - id: products_row_count
+    description: "Products table must have at least 10 rows"
+    type: row_count
+    min: 10
+    severity: CRITICAL
+
+  - id: products_sku_regex
+    description: "SKU must match pattern SKU-XXXXXX"
+    type: regex
+    column: sku
+    pattern: "^SKU-[A-Z0-9]{4,10}$"
+    severity: WARNING
+
+  - id: products_date_range
+    description: "launch_date must be between 2000-01-01 and today"
+    type: date_range
+    column: launch_date
+    min: "2000-01-01"
+    max: "today"
+    severity: WARNING
